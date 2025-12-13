@@ -1,0 +1,132 @@
+/* --- CSS ভেরিয়েবলস --- */
+:root {
+    --bg-primary: linear-gradient(180deg, #2b1055 0%, #7597de 100%);
+    --bg-secondary: rgba(255, 255, 255, 0.1); 
+    --text-primary: #ffffff;
+    --text-secondary: #e0e0e0;
+    --nav-bg: rgba(20, 20, 40, 0.9);
+    --border-color: rgba(255, 255, 255, 0.2);
+    --glass-effect: blur(10px);
+    --accent-color: #ff0000;
+}
+
+/* থিম ক্লাসসমূহ */
+body.theme-light { --bg-primary: #f5f5f5; --bg-secondary: #ffffff; --text-primary: #0f0f0f; --text-secondary: #606060; --nav-bg: #ffffff; --border-color: #e0e0e0; --glass-effect: none; }
+body.theme-dark { --bg-primary: #121212; --bg-secondary: #1e1e1e; --text-primary: #ffffff; --text-secondary: #aaaaaa; --nav-bg: #1e1e1e; --border-color: #333; }
+body.theme-neon { --bg-primary: #050510; --bg-secondary: #0f0f20; --text-primary: #00f2ff; --text-secondary: #b000ff; --nav-bg: #0f0f20; --border-color: #00f2ff; --accent-color: #00f2ff; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+body { background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; padding-bottom: 70px; background-attachment: fixed; }
+
+/* হেডার */
+header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--nav-bg); backdrop-filter: var(--glass-effect);
+    padding: 10px 15px; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+}
+.logo { font-size: 20px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 5px; }
+
+/* সার্চ বার */
+.search-container { position: relative; width: 70%; }
+.search-box {
+    display: flex; align-items: center;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 25px; padding: 8px 15px;
+}
+.search-box input {
+    background: transparent; border: none; outline: none; color: var(--text-primary); width: 100%; margin-left: 8px; font-size: 15px;
+}
+.suggestions-box {
+    position: absolute; top: 110%; left: 0; width: 100%;
+    background: var(--nav-bg); border-radius: 10px; z-index: 101;
+    display: none; border: 1px solid var(--border-color);
+}
+.suggestion-item { padding: 12px; border-bottom: 1px solid var(--border-color); cursor: pointer; font-size: 14px; }
+
+/* --- YouTube Card Style --- */
+.grid-container {
+    padding: 0; max-width: 600px; margin: 0 auto;
+    display: flex; flex-direction: column; gap: 10px;
+}
+.card {
+    background: transparent; cursor: pointer; padding-bottom: 15px; margin-bottom: 5px;
+}
+.thumbnail-container {
+    width: 100%; position: relative; padding-top: 56.25%; /* 16:9 */
+    background: #000; overflow: hidden;
+}
+.card-img {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;
+}
+.card-meta {
+    display: flex; padding: 12px 12px 0 12px; align-items: flex-start;
+}
+.channel-icon {
+    width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+    margin-right: 12px; flex-shrink: 0; background: #333; border: 1px solid var(--border-color);
+}
+.text-info { flex: 1; display: flex; flex-direction: column; }
+.card-title {
+    font-size: 16px; font-weight: 500; line-height: 1.3; margin-bottom: 4px;
+    color: var(--text-primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.card-subtitle { font-size: 12px; color: var(--text-secondary); }
+
+/* সেটিংস মেনু */
+.settings-list { padding: 15px; max-width: 600px; margin: 0 auto; }
+.setting-card {
+    background: var(--bg-secondary); border: 1px solid var(--border-color);
+    padding: 15px; margin-bottom: 10px; border-radius: 12px;
+    display: flex; align-items: center; cursor: pointer; backdrop-filter: var(--glass-effect);
+}
+.setting-icon { margin-right: 15px; font-size: 18px; color: var(--text-primary); }
+.setting-text { flex: 1; font-weight: 500; font-size: 15px; }
+
+/* Contact Page Buttons */
+.contact-btn {
+    background: var(--bg-secondary); color: var(--text-primary); padding: 12px;
+    border-radius: 10px; display: flex; align-items: center; margin-bottom: 10px;
+    text-decoration: none; border: 1px solid var(--border-color);
+}
+.contact-btn i { font-size: 20px; margin-right: 15px; }
+
+/* Theme Modal */
+.theme-modal {
+    position: fixed; bottom: -100%; left: 0; width: 100%;
+    background: var(--nav-bg); border-radius: 20px 20px 0 0; padding: 20px;
+    z-index: 2000; transition: bottom 0.3s; border-top: 1px solid var(--border-color);
+}
+.theme-modal.active { bottom: 0; }
+.theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+.theme-option { border: 2px solid var(--border-color); border-radius: 10px; padding: 10px; text-align: center; cursor: pointer; }
+.theme-preview { height: 40px; border-radius: 5px; margin-bottom: 5px; }
+
+/* Detail Modal */
+.full-modal {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.95); z-index: 3000; overflow-y: auto;
+}
+.full-modal-content {
+    background: var(--nav-bg); min-height: 100%; padding: 20px; color: var(--text-primary);
+}
+.prompt-box { background: var(--bg-secondary); padding: 15px; border-radius: 8px; font-family: monospace; margin: 15px 0; border: 1px dashed var(--border-color); user-select: text; }
+
+.action-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+.action-btn { flex: 1; padding: 10px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.copy-btn { background: var(--accent-color); color: white; }
+.share-btn { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); }
+
+/* Bottom Nav & Pages */
+.bottom-nav {
+    position: fixed; bottom: 0; left: 0; width: 100%;
+    background: var(--nav-bg); border-top: 1px solid var(--border-color);
+    display: flex; justify-content: space-around; padding: 10px 0;
+    z-index: 999; backdrop-filter: var(--glass-effect);
+}
+.nav-item { text-align: center; color: var(--text-secondary); width: 25%; font-size: 10px; cursor: pointer; }
+.nav-item.active { color: var(--accent-color); }
+.nav-item i { font-size: 20px; margin-bottom: 4px; display: block; }
+.page { display: none; padding-top: 10px; }
+.page.active { display: block; }
