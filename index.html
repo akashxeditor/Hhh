@@ -273,7 +273,7 @@
         <div class="nav-item" onclick="switchTab('settingPage', this)"><i class="fas fa-cog"></i> Settings</div>
     </nav>
 
-    <script type="module">
+                            <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
@@ -306,7 +306,7 @@
             }
         });
 
-        // ২. কার্ড ডাটা লোড
+        // ২. কার্ড ডাটা লোড ও URL হ্যান্ডলিং
         onValue(ref(db, 'prompts/'), (snapshot) => {
             const data = snapshot.val();
             allData = [];
@@ -315,10 +315,36 @@
                 allData.reverse();
                 renderGrid(allData, 'contentGrid');
                 renderGrid(allData.filter(d => parseFloat(d.rating) >= 4.5), 'trendingGrid');
+                
+                // --- পেজ লোডের পরে URL চেক করা ---
+                checkUrlAndOpenModal(allData);
+                // ---------------------------------
+
             } else {
                 document.getElementById('contentGrid').innerHTML = "<p style='text-align:center'>No Data</p>";
             }
         });
+        
+        // **নতুন ফাংশন:** URL চেক করে মোডাল ওপেন করা
+        function checkUrlAndOpenModal(dataList) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewSlug = urlParams.get('view');
+
+            if (viewSlug) {
+                // Slug থেকে আসল টাইটেল ফরমেটে নিয়ে আসা
+                const titleToFind = decodeURIComponent(viewSlug).replace(/-/g, ' ').trim().toLowerCase();
+                
+                // টাইটেল অনুযায়ী ডাটা খুঁজে বের করা
+                const foundItem = dataList.find(item => item.title.toLowerCase() === titleToFind);
+
+                if (foundItem) {
+                    const timeStr = timeAgo(foundItem.timestamp);
+                    // মোডাল ওপেন করা
+                    openModal(foundItem, timeStr, false); // false মানে এইটা URL লোড থেকে আসছে, তাই আবার হিস্ট্রি push দরকার নেই।
+                }
+            }
+        }
+
 
         // ৩. গ্রিড রেন্ডারার
         window.renderGrid = (list, containerId) => {
@@ -328,7 +354,7 @@
                 const timeStr = timeAgo(item.timestamp);
                 const card = document.createElement('div');
                 card.className = 'card';
-                card.onclick = () => openModal(item, timeStr);
+                card.onclick = () => openModal(item, timeStr, true); // true মানে ইউজার ক্লিক করেছে, তাই হিস্ট্রি push হবে।
                 card.innerHTML = `
                     <div class="thumbnail-container">
                         <img src="${item.imgLink}" class="card-img" onerror="this.src='https://via.placeholder.com/480x270'">
@@ -355,20 +381,22 @@
             return "Just now";
         }
 
-        // ৫. মোডাল এবং URL হ্যান্ডলিং (নতুন আপডেট)
-        window.openModal = (item, time) => {
+        // ৫. মোডাল এবং URL হ্যান্ডলিং (আপডেট করা হয়েছে)
+        window.openModal = (item, time, pushHistory = true) => {
             currentItem = item;
             document.getElementById('modalImg').src = item.imgLink;
             document.getElementById('modalTitle').innerText = item.title;
             document.getElementById('modalPrompt').innerText = item.prompt;
             document.getElementById('modalMeta').innerText = `Posted: ${time} • Rating: ${item.rating}`;
             
-            // URL তৈরি এবং আপডেট করা
+            // URL তৈরি করা
             const slug = item.title.trim().replace(/\s+/g, '-');
             const newUrl = `?view=${encodeURIComponent(slug)}`;
             
-            // ব্রাউজার হিস্ট্রিতে পুশ করা (যাতে Back Button কাজ করে)
-            window.history.pushState({modalOpen: true, itemId: item.id}, "", newUrl);
+            // যদি ইউজার ক্লিক করে থাকে (pushHistory = true), তবেই হিস্ট্রিতে push করা হবে।
+            if (pushHistory) {
+                window.history.pushState({modalOpen: true, itemId: item.id}, "", newUrl);
+            }
 
             const cBox = document.getElementById('modalComments');
             cBox.innerHTML = "";
@@ -387,7 +415,6 @@
         // মোডাল ক্লোজ করা
         window.closeModal = () => {
             // যদি URL এ প্যারামিটার থাকে, তাহলে Back করে সেটা রিমুভ করি
-            // এতে করে popstate ট্রিগার হবে এবং মোডাল বন্ধ হবে
             if (window.location.search.includes("view=")) {
                 window.history.back();
             } else {
@@ -398,10 +425,10 @@
         // ব্রাউজারের ব্যাক বাটন হ্যান্ডেল করা
         window.onpopstate = (event) => {
             // যখন ইউজার ব্যাক করবে, মোডাল হাইড করে দেব
-   document.getElementById('detailModal').style.display = 'none';
+            document.getElementById('detailModal').style.display = 'none';
         };
-
-        // ৬. কপি এবং শেয়ার
+        
+        // ৬. কপি এবং শেয়ার (পূর্বের মতোই)
         window.copyPrompt = () => {
             navigator.clipboard.writeText(document.getElementById('modalPrompt').innerText);
             alert("Copied!");
@@ -419,7 +446,7 @@
             }
         });
 
-        // ৭. সেটিংস ও নেভিগেশন
+        // ৭. সেটিংস ও নেভিগেশন (পূর্বের মতোই)
         window.openThemeSelector = () => document.getElementById('themeModal').classList.add('active');
         window.closeThemeSelector = () => document.getElementById('themeModal').classList.remove('active');
         window.setTheme = t => { document.body.className = t; localStorage.setItem('theme', t); closeThemeSelector(); }
@@ -467,6 +494,6 @@
             if(document.getElementById('homePage').classList.contains('active')) renderGrid(filtered, 'contentGrid');
         });
         document.onclick=(e)=>{ if(!e.target.closest('.search-container')) sBox.style.display='none'; }
-    </script>
-</body>
+                            </script>
+                            </body>
 </html>
