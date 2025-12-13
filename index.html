@@ -349,18 +349,41 @@
             alert("Copied!
                   }
 
-        // Updated Share Logic (Specific Link)
-        window.shareItem = async () => {
-            if(!currentItem) return;
-            // এই লিংকটি ইউনিক হবে
-            const specificLink = `${window.location.origin}${window.location.pathname}?id=${currentItem.id}`;
-            
-            const data = { 
-                title: currentItem.title, 
-                text: `Check this AI Art!\n"${currentItem.title}"\n\nLink: ${specificLink}`, 
-                url: specificLink 
-            };
-            
+        //// Updated Share Logic (Specific Link)
+window.shareItem = async () => {
+    if(!currentItem) return;
+
+    // ১. নির্দিষ্ট প্রম্পটের ইউনিক লিংক তৈরি করা
+    const specificLink = `${window.location.origin}${window.location.pathname}?id=${currentItem.id}`;
+    
+    // ২. শেয়ার করার জন্য বার্তা তৈরি করা
+    const shareText = `Check this amazing AI Art Prompt:\n"${currentItem.title}"\n\nLink: ${specificLink}`;
+
+    // ৩. নেভিগেটর শেয়ার API ব্যবহার করে চেষ্টা করা
+    const data = { 
+        title: currentItem.title, 
+        text: shareText, 
+        url: specificLink 
+    };
+    
+    try { 
+        // যদি ব্রাউজার ও ডিভাইস Share API সাপোর্ট করে
+        await navigator.share(data); 
+    } catch (err) { 
+        // যদি Share API ফেইল করে (PC বা অন্য ব্রাউজারে)
+        console.error("Share API failed, falling back to copy:", err);
+        
+        try {
+            // ৪. ক্লিপবোর্ডে সম্পূর্ণ টেক্সট কপি করা 
+            await navigator.clipboard.writeText(shareText);
+            alert(`Share link for "${currentItem.title}" copied to clipboard! Paste it anywhere.`); 
+        } catch (clipboardErr) {
+            // যদি ক্লিপবোর্ড কপিও ফেইল করে
+            console.error("Clipboard copy failed:", clipboardErr);
+            alert("Sorry, automatic copy failed. Please copy the URL from the address bar manually.");
+        }
+    }
+}
             try { 
                 await navigator.share(data); 
             } catch { 
