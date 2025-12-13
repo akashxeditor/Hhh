@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Prompt Hub</title>
-    
-    <meta property="og:title" content="AI Prompt Hub">
-    <meta property="og:description" content="Discover and share amazing AI image prompts.">
-    <meta property="og:image" content="https://via.placeholder.com/1200x630?text=AI+Hub">
-    
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         /* --- CSS ভেরিয়েবলস --- */
@@ -17,13 +12,13 @@
             --bg-secondary: rgba(255, 255, 255, 0.1); 
             --text-primary: #ffffff;
             --text-secondary: #e0e0e0;
-            --nav-bg: rgba(20, 20, 40, 0.95);
+            --nav-bg: rgba(20, 20, 40, 0.9);
             --border-color: rgba(255, 255, 255, 0.2);
             --glass-effect: blur(10px);
             --accent-color: #ff0000;
         }
 
-        /* থিমস */
+        /* থিম ক্লাসসমূহ */
         body.theme-light { --bg-primary: #f5f5f5; --bg-secondary: #ffffff; --text-primary: #0f0f0f; --text-secondary: #606060; --nav-bg: #ffffff; --border-color: #e0e0e0; --glass-effect: none; }
         body.theme-dark { --bg-primary: #121212; --bg-secondary: #1e1e1e; --text-primary: #ffffff; --text-secondary: #aaaaaa; --nav-bg: #1e1e1e; --border-color: #333; }
         body.theme-neon { --bg-primary: #050510; --bg-secondary: #0f0f20; --text-primary: #00f2ff; --text-secondary: #b000ff; --nav-bg: #0f0f20; --border-color: #00f2ff; --accent-color: #00f2ff; }
@@ -31,6 +26,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; padding-bottom: 70px; background-attachment: fixed; }
 
+        /* হেডার */
         header {
             position: sticky; top: 0; z-index: 100;
             background: var(--nav-bg); backdrop-filter: var(--glass-effect);
@@ -39,62 +35,110 @@
         }
         .logo { font-size: 20px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 5px; }
         
-        .search-container { position: relative; width: 65%; }
+        /* সার্চ বার */
+        .search-container { position: relative; width: 70%; }
         .search-box {
-            display: flex; align-items: center; background: var(--bg-secondary);
-            border: 1px solid var(--border-color); border-radius: 25px; padding: 8px 15px;
+            display: flex; align-items: center;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 25px; padding: 8px 15px;
         }
         .search-box input {
             background: transparent; border: none; outline: none; color: var(--text-primary); width: 100%; margin-left: 8px; font-size: 15px;
         }
         .suggestions-box {
-            position: absolute; top: 110%; left: 0; width: 100%; background: var(--nav-bg);
-            border-radius: 10px; z-index: 101; display: none; border: 1px solid var(--border-color);
+            position: absolute; top: 110%; left: 0; width: 100%;
+            background: var(--nav-bg); border-radius: 10px; z-index: 101;
+            display: none; border: 1px solid var(--border-color);
         }
         .suggestion-item { padding: 12px; border-bottom: 1px solid var(--border-color); cursor: pointer; font-size: 14px; }
 
-        /* Grid & Card */
-        .grid-container { padding: 0; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
-        .card { background: transparent; cursor: pointer; padding-bottom: 15px; margin-bottom: 5px; }
-        .thumbnail-container { width: 100%; position: relative; padding-top: 56.25%; background: #000; overflow: hidden; }
-        .card-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-        .card-meta { display: flex; padding: 12px 12px 0 12px; align-items: flex-start; }
-        .channel-icon { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; margin-right: 12px; flex-shrink: 0; background: #333; border: 1px solid var(--border-color); }
+        /* --- YouTube Card Style --- */
+        .grid-container {
+            padding: 0; max-width: 600px; margin: 0 auto;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .card {
+            background: transparent; cursor: pointer; padding-bottom: 15px; margin-bottom: 5px;
+        }
+        .thumbnail-container {
+            width: 100%; position: relative; padding-top: 56.25%; /* 16:9 */
+            background: #000; overflow: hidden;
+        }
+        .card-img {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;
+        }
+        .card-meta {
+            display: flex; padding: 12px 12px 0 12px; align-items: flex-start;
+        }
+        .channel-icon {
+            width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+            margin-right: 12px; flex-shrink: 0; background: #333; border: 1px solid var(--border-color);
+        }
         .text-info { flex: 1; display: flex; flex-direction: column; }
-        .card-title { font-size: 16px; font-weight: 500; line-height: 1.3; margin-bottom: 4px; color: var(--text-primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-title {
+            font-size: 16px; font-weight: 500; line-height: 1.3; margin-bottom: 4px;
+            color: var(--text-primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
         .card-subtitle { font-size: 12px; color: var(--text-secondary); }
 
-        /* Settings & Others */
+        /* সেটিংস মেনু */
         .settings-list { padding: 15px; max-width: 600px; margin: 0 auto; }
-        .setting-card { background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 15px; margin-bottom: 10px; border-radius: 12px; display: flex; align-items: center; cursor: pointer; backdrop-filter: var(--glass-effect); }
+        .setting-card {
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            padding: 15px; margin-bottom: 10px; border-radius: 12px;
+            display: flex; align-items: center; cursor: pointer; backdrop-filter: var(--glass-effect);
+        }
         .setting-icon { margin-right: 15px; font-size: 18px; color: var(--text-primary); }
         .setting-text { flex: 1; font-weight: 500; font-size: 15px; }
 
-        .contact-btn { background: var(--bg-secondary); color: var(--text-primary); padding: 12px; border-radius: 10px; display: flex; align-items: center; margin-bottom: 10px; text-decoration: none; border: 1px solid var(--border-color); }
+        /* Contact Page Buttons */
+        .contact-btn {
+            background: var(--bg-secondary); color: var(--text-primary); padding: 12px;
+            border-radius: 10px; display: flex; align-items: center; margin-bottom: 10px;
+            text-decoration: none; border: 1px solid var(--border-color);
+        }
         .contact-btn i { font-size: 20px; margin-right: 15px; }
 
-        /* Modals */
-        .theme-modal { position: fixed; bottom: -100%; left: 0; width: 100%; background: var(--nav-bg); border-radius: 20px 20px 0 0; padding: 20px; z-index: 2000; transition: bottom 0.3s; border-top: 1px solid var(--border-color); }
+        /* Theme Modal */
+        .theme-modal {
+            position: fixed; bottom: -100%; left: 0; width: 100%;
+            background: var(--nav-bg); border-radius: 20px 20px 0 0; padding: 20px;
+            z-index: 2000; transition: bottom 0.3s; border-top: 1px solid var(--border-color);
+        }
         .theme-modal.active { bottom: 0; }
         .theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
         .theme-option { border: 2px solid var(--border-color); border-radius: 10px; padding: 10px; text-align: center; cursor: pointer; }
         .theme-preview { height: 40px; border-radius: 5px; margin-bottom: 5px; }
 
-        .full-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; overflow-y: auto; }
-        .full-modal-content { background: var(--nav-bg); min-height: 100%; padding: 20px; color: var(--text-primary); padding-bottom: 100px; }
-        .prompt-box { background: var(--bg-secondary); padding: 15px; border-radius: 8px; font-family: monospace; margin: 15px 0; border: 1px dashed var(--border-color); user-select: text; white-space: pre-wrap; word-wrap: break-word; }
+        /* Detail Modal */
+        .full-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 3000; overflow-y: auto;
+        }
+        .full-modal-content {
+            background: var(--nav-bg); min-height: 100%; padding: 20px; color: var(--text-primary);
+        }
+        .prompt-box { background: var(--bg-secondary); padding: 15px; border-radius: 8px; font-family: monospace; margin: 15px 0; border: 1px dashed var(--border-color); user-select: text; }
         
         .action-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
         .action-btn { flex: 1; padding: 10px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .copy-btn { background: var(--accent-color); color: white; }
         .share-btn { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); }
 
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--nav-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 999; backdrop-filter: var(--glass-effect); }
+        /* Bottom Nav & Pages */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--nav-bg); border-top: 1px solid var(--border-color);
+            display: flex; justify-content: space-around; padding: 10px 0;
+            z-index: 999; backdrop-filter: var(--glass-effect);
+        }
         .nav-item { text-align: center; color: var(--text-secondary); width: 25%; font-size: 10px; cursor: pointer; }
         .nav-item.active { color: var(--accent-color); }
         .nav-item i { font-size: 20px; margin-bottom: 4px; display: block; }
         .page { display: none; padding-top: 10px; }
         .page.active { display: block; }
+
     </style>
 </head>
 <body class="theme-gradient">
@@ -132,27 +176,43 @@
     <div id="settingPage" class="page">
         <div class="settings-list">
             <h2 style="margin: 0 0 20px 0; text-align: center;">Settings</h2>
+            
             <div class="setting-card" onclick="openThemeSelector()">
-                <i class="fas fa-palette setting-icon"></i><span class="setting-text">Themes</span>
+                <i class="fas fa-palette setting-icon"></i>
+                <span class="setting-text">Themes</span>
+                <i class="fas fa-chevron-right" style="opacity:0.5; font-size:12px;"></i>
             </div>
+            
             <div class="setting-card" onclick="openHistoryPage()">
-                <i class="fas fa-history setting-icon"></i><span class="setting-text">Watch History</span>
+                <i class="fas fa-history setting-icon"></i>
+                <span class="setting-text">Watch History</span>
+                <i class="fas fa-chevron-right" style="opacity:0.5; font-size:12px;"></i>
             </div>
+
             <div class="setting-card" onclick="shareApp()">
-                <i class="fas fa-share-alt setting-icon"></i><span class="setting-text">Share Application</span>
+                <i class="fas fa-share-alt setting-icon"></i>
+                <span class="setting-text">Share Application</span>
             </div>
+
             <a href="https://your-privacy-link.com" target="_blank" style="text-decoration:none; color:inherit;">
                 <div class="setting-card">
-                    <i class="fas fa-shield-alt setting-icon"></i><span class="setting-text">Privacy Policy</span>
+                    <i class="fas fa-shield-alt setting-icon"></i>
+                    <span class="setting-text">Privacy Policy</span>
+                    <i class="fas fa-external-link-alt" style="opacity:0.5; font-size:12px;"></i>
                 </div>
             </a>
+
             <a href="https://your-help-link.com" target="_blank" style="text-decoration:none; color:inherit;">
                 <div class="setting-card">
-                    <i class="fas fa-question-circle setting-icon"></i><span class="setting-text">Help & Support</span>
+                    <i class="fas fa-question-circle setting-icon"></i>
+                    <span class="setting-text">Help & Support</span>
+                    <i class="fas fa-external-link-alt" style="opacity:0.5; font-size:12px;"></i>
                 </div>
             </a>
+            
              <div class="setting-card" onclick="window.location.href='admin.html'">
-                <i class="fas fa-user-shield setting-icon"></i><span class="setting-text">Admin Panel</span>
+                <i class="fas fa-user-shield setting-icon"></i>
+                <span class="setting-text">Admin Panel</span>
             </div>
         </div>
     </div>
@@ -169,7 +229,7 @@
         <span onclick="closeModal()" style="position:absolute; top:15px; right:15px; font-size:24px; cursor:pointer; z-index:3002;">&times;</span>
         <div class="full-modal-content">
             <img src="" id="modalImg" style="width:100%; border-radius:10px; margin-bottom:15px;">
-            <h2 id="modalTitle" style="font-size:18px; margin-bottom:5px; line-height: 1.4;">Title</h2>
+            <h2 id="modalTitle" style="font-size:18px; margin-bottom:5px;">Title</h2>
             <div id="modalMeta" style="color:var(--text-secondary); font-size:13px; margin-bottom:20px;"></div>
             
             <div class="action-buttons">
@@ -217,33 +277,36 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        // Firebase Config
         const firebaseConfig = {
-            apiKey: "AIzaSyCbeS3rJKWLwM4b757Nc4pcuiUhghFEV4Y",
-            authDomain: "movie-box-b4daf.firebaseapp.com",
+            
             databaseURL: "https://movie-box-b4daf-default-rtdb.firebaseio.com",
-            projectId: "movie-box-b4daf",
-            storageBucket: "movie-box-b4daf.firebasestorage.app",
-            messagingSenderId: "625334367654",
-            appId: "1:625334367654:web:9828d6280aa50771474b67",
-            measurementId: "G-Y2LTDYLLNK"
+            
+            
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // --- মেইন লজিক ---
         let adminAvatar = "https://via.placeholder.com/36"; 
+        
         let allData = [];
         let currentItem = null;
 
-        // 1. Avatar Load
-        onValue(ref(db, 'settings/adminAvatar'), (snap) => {
-            if(snap.exists()) {
-                adminAvatar = snap.val();
-                document.querySelectorAll('.channel-icon').forEach(img => img.src = adminAvatar);
+        // ১. ডাটাবেস থেকে অবতার চেক করা
+        const settingsRef = ref(db, 'settings/adminAvatar');
+        onValue(settingsRef, (snap) => {
+            const url = snap.val();
+            if(url) {
+                adminAvatar = url;
+                document.querySelectorAll('.channel-icon').forEach(img => {
+                    img.src = adminAvatar;
+                });
             }
         });
 
-        // 2. Data Load with Deep Link Check
+        // ২. কার্ড ডাটা লোড
         onValue(ref(db, 'prompts/'), (snapshot) => {
             const data = snapshot.val();
             allData = [];
@@ -252,23 +315,12 @@
                 allData.reverse();
                 renderGrid(allData, 'contentGrid');
                 renderGrid(allData.filter(d => parseFloat(d.rating) >= 4.5), 'trendingGrid');
-
-                // *** Deep Linking Check ***
-                // ডাটা লোড হওয়ার পর চেক করবে URL-এ কোনো ID আছে কিনা
-                const urlParams = new URLSearchParams(window.location.search);
-                const sharedId = urlParams.get('id');
-                if (sharedId) {
-                    const targetItem = allData.find(item => item.id === sharedId);
-                    if (targetItem) {
-                        // যদি আইডি মিলে যায়, মোডাল ওপেন হবে
-                        openModal(targetItem, timeAgo(targetItem.timestamp), false);
-                    }
-                }
             } else {
                 document.getElementById('contentGrid').innerHTML = "<p style='text-align:center'>No Data</p>";
             }
         });
 
+        // ৩. গ্রিড রেন্ডারার
         window.renderGrid = (list, containerId) => {
             const container = document.getElementById(containerId);
             container.innerHTML = "";
@@ -293,6 +345,7 @@
             });
         };
 
+        // ৪. টাইম Ago ফাংশন
         function timeAgo(ts) {
             if(!ts) return "Recently";
             const sec = Math.floor((Date.now()-ts)/1000);
@@ -302,21 +355,21 @@
             return "Just now";
         }
 
-        // Updated Open Modal (Handles URL)
-        window.openModal = (item, time, updateUrl = true) => {
+        // ৫. মোডাল এবং URL হ্যান্ডলিং (নতুন আপডেট)
+        window.openModal = (item, time) => {
             currentItem = item;
             document.getElementById('modalImg').src = item.imgLink;
             document.getElementById('modalTitle').innerText = item.title;
             document.getElementById('modalPrompt').innerText = item.prompt;
             document.getElementById('modalMeta').innerText = `Posted: ${time} • Rating: ${item.rating}`;
             
-            // URL Update: Add ?id=xyz
-            if(updateUrl) {
-                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?id=' + item.id;
-                window.history.pushState({path: newUrl}, '', newUrl);
-            }
+            // URL তৈরি এবং আপডেট করা
+            const slug = item.title.trim().replace(/\s+/g, '-');
+            const newUrl = `?view=${encodeURIComponent(slug)}`;
+            
+            // ব্রাউজার হিস্ট্রিতে পুশ করা (যাতে Back Button কাজ করে)
+            window.history.pushState({modalOpen: true, itemId: item.id}, "", newUrl);
 
-            // Comments
             const cBox = document.getElementById('modalComments');
             cBox.innerHTML = "";
             if(item.comments) {
@@ -331,68 +384,33 @@
             saveHistory(item);
         }
 
-        // Updated Close Modal (Resets URL)
+        // মোডাল ক্লোজ করা
         window.closeModal = () => {
-            document.getElementById('detailModal').style.display = 'none';
-            // URL Reset: Remove ?id=xyz
-            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-            window.history.pushState({path: newUrl}, '', newUrl);
-        };
-
-        // Browser Back Button Handler
-        window.onpopstate = function(event) {
-            document.getElementById('detailModal').style.display = 'none';
-        };
-
-        window.copyPrompt = () => {
-            navigator.clipboard.writeText(document.getElementById('modalPrompt').innerText);
-            alert("Copied!
-                  }
-
-        //// Updated Share Logic (Specific Link)
-window.shareItem = async () => {
-    if(!currentItem) return;
-
-    // ১. নির্দিষ্ট প্রম্পটের ইউনিক লিংক তৈরি করা
-    const specificLink = `${window.location.origin}${window.location.pathname}?id=${currentItem.id}`;
-    
-    // ২. শেয়ার করার জন্য বার্তা তৈরি করা
-    const shareText = `Check this amazing AI Art Prompt:\n"${currentItem.title}"\n\nLink: ${specificLink}`;
-
-    // ৩. নেভিগেটর শেয়ার API ব্যবহার করে চেষ্টা করা
-    const data = { 
-        title: currentItem.title, 
-        text: shareText, 
-        url: specificLink 
-    };
-    
-    try { 
-        // যদি ব্রাউজার ও ডিভাইস Share API সাপোর্ট করে
-        await navigator.share(data); 
-    } catch (err) { 
-        // যদি Share API ফেইল করে (PC বা অন্য ব্রাউজারে)
-        console.error("Share API failed, falling back to copy:", err);
-        
-        try {
-            // ৪. ক্লিপবোর্ডে সম্পূর্ণ টেক্সট কপি করা 
-            await navigator.clipboard.writeText(shareText);
-            alert(`Share link for "${currentItem.title}" copied to clipboard! Paste it anywhere.`); 
-        } catch (clipboardErr) {
-            // যদি ক্লিপবোর্ড কপিও ফেইল করে
-            console.error("Clipboard copy failed:", clipboardErr);
-            alert("Sorry, automatic copy failed. Please copy the URL from the address bar manually.");
-        }
-    }
-}
-            try { 
-                await navigator.share(data); 
-            } catch { 
-                // PC বা সাপোর্টেড না হলে লিংক কপি হবে
-                navigator.clipboard.writeText(data.text);
-                alert("Link copied to clipboard! Paste it anywhere."); 
+            // যদি URL এ প্যারামিটার থাকে, তাহলে Back করে সেটা রিমুভ করি
+            // এতে করে popstate ট্রিগার হবে এবং মোডাল বন্ধ হবে
+            if (window.location.search.includes("view=")) {
+                window.history.back();
+            } else {
+                document.getElementById('detailModal').style.display = 'none';
             }
         }
 
+        // ব্রাউজারের ব্যাক বাটন হ্যান্ডেল করা
+        window.onpopstate = (event) => {
+            // যখন ইউজার ব্যাক করবে, মোডাল হাইড করে দেব
+   document.getElementById('detailModal').style.display = 'none';
+        };
+
+        // ৬. কপি এবং শেয়ার
+        window.copyPrompt = () => {
+            navigator.clipboard.writeText(document.getElementById('modalPrompt').innerText);
+            alert("Copied!");
+        }
+        window.shareItem = async () => {
+            if(!currentItem) return;
+            const data = { title: currentItem.title, text: `Check this AI Art!\n${currentItem.title}\n${window.location.href}`, url: window.location.href };
+            try { await navigator.share(data); } catch { alert("Link copied!"); navigator.clipboard.writeText(data.text); }
+        }
         document.getElementById('postComment').addEventListener('click', () => {
             const txt = document.getElementById('commentInput').value;
             if(currentItem && txt) {
@@ -401,7 +419,7 @@ window.shareItem = async () => {
             }
         });
 
-        // Settings & Nav
+        // ৭. সেটিংস ও নেভিগেশন
         window.openThemeSelector = () => document.getElementById('themeModal').classList.add('active');
         window.closeThemeSelector = () => document.getElementById('themeModal').classList.remove('active');
         window.setTheme = t => { document.body.className = t; localStorage.setItem('theme', t); closeThemeSelector(); }
