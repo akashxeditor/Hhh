@@ -2,15 +2,7 @@
 // আপনার তৈরি করা নতুন ফাংশনের লিংক
 const API_URL = "https://bnlxkclylntwrgrprakq.supabase.co/functions/v1/swift-endpoint";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// Firebase Config
-const firebaseConfig = {
-    databaseURL: "https://movie-box-b4daf-default-rtdb.firebaseio.com",
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
 
 // --- মেইন লজিক ---
 let adminAvatar = "https://via.placeholder.com/36"; 
