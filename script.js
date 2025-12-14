@@ -2,6 +2,9 @@
         
         // --- Supabase / API কনফিগারেশন ---
         const API_URL = "https://bnlxkclylntwrgrprakq.supabase.co/functions/v1/swift-endpoint";
+        
+        // আপনার যদি Supabase ANON KEY থাকে, তাহলে নিচের কোটেশনের ভেতরে বসান। না থাকলে ফাঁকা রাখুন।
+        const SUPABASE_ANON_KEY = ""; 
 
         // --- মেইন লজিক ---
         let adminAvatar = "https://via.placeholder.com/36"; 
@@ -9,23 +12,54 @@
         let allData = [];
         let currentItem = null;
         
-        // ১. ডাটা লোড ফাংশন (Fetch ব্যবহার করে)
+        // ১. ডাটা লোড ফাংশন
         async function loadData() {
             const container = document.getElementById('contentGrid');
+            container.innerHTML = "<p style='text-align:center; color:yellow;'>Loading Data from Supabase...</p>";
             
             try {
+                // হেডার সেট করা (প্রয়োজন হতে পারে)
+                const headers = {
+                    "Content-Type": "application/json"
+                };
+                if(SUPABASE_ANON_KEY) {
+                    headers["Authorization"] = `Bearer ${SUPABASE_ANON_KEY}`;
+                }
+
                 // API কল করা
-                const response = await fetch(API_URL);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const response = await fetch(API_URL, {
+                    method: 'GET', // অথবা 'POST' হতে পারে, আপনার ফাংশন অনুযায়ী
+                    headers: headers
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server Error: ${response.status} ${response.statusText}`);
+                }
                 
                 const data = await response.json();
                 
+                // ডাটা ফরম্যাট চেক এবং অ্যারেতে কনভার্ট করা
                 allData = [];
-                // ডাটা ফরম্যাট হ্যান্ডলিং (যদি অবজেক্ট বা অ্যারে হয়)
+                
+                // যদি ডাটা সরাসরি অ্যারে হয়
                 if (Array.isArray(data)) {
                     allData = data;
-                } else if (data && typeof data === 'object') {
-                    Object.keys(data).forEach(key => allData.push({ id: key, ...data[key] }));
+                } 
+                // যদি ডাটা কোনো অবজেক্টের ভেতরে থাকে (যেমন: { prompts: [...] })
+                else if (data && typeof data === 'object') {
+                    // চেষ্টা ১: সরাসরি অবজেক্ট কি (Firebase style)
+                    Object.keys(data).forEach(key => {
+                        // চেক করছি ভেতরের ভ্যালুগুলো অবজেক্ট কিনা
+                        if(typeof data[key] === 'object') {
+                            allData.push({ id: key, ...data[key] });
+                        }
+                    });
+                }
+
+                if (allData.length === 0) {
+                    container.innerHTML = "<p style='text-align:center'>No Data Found (Format might be wrong)</p>";
+                    console.log("Received Data:", data); // কনসোলে ডাটা চেক করুন
+                    return;
                 }
 
                 // রিভার্স অর্ডারে দেখানো
@@ -33,55 +67,56 @@
 
                 // গ্রিড রেন্ডার করা
                 window.renderGrid(allData, 'contentGrid');
-                const trending = allData.filter(d => parseFloat(d.rating) >= 4.5);
+                const trending = allData.filter(d => d.rating && parseFloat(d.rating) >= 4.5);
                 window.renderGrid(trending, 'trendingGrid');
                 
-                // --- ফিক্স: পেজ লোড হলে URL চেক করা ---
+                // URL চেক
                 checkUrlAndOpenModal(allData);
 
             } catch (error) {
-                console.error("Error loading data from API:", error);
-                container.innerHTML = "<p style='text-align:center; color:red;'>Failed to load content. Check API URL.</p>";
+                console.error("Load Error:", error);
+                // স্ক্রিনে এরর দেখানো
+                container.innerHTML = `
+                    <div style="text-align:center; padding:20px; color:red; border:1px solid red; margin:10px; border-radius:10px;">
+                        <h3>⚠️ Error Loading Data</h3>
+                        <p>${error.message}</p>
+                        <p style="font-size:12px; color:#ccc;">(Check Console for details or CORS issues)</p>
+                        <button onclick="location.reload()" style="padding:10px; margin-top:10px;">Retry</button>
+                    </div>`;
             }
         }
 
-        // স্ক্রিপ্ট লোড হওয়ার সাথে সাথে ডাটা লোড শুরু করা
+        // স্ক্রিপ্ট লোড হওয়ার সাথে সাথে কল হবে
         loadData();
 
 
-        // ** ফিক্সড ফাংশন: URL চেক করে সঠিক ইমেজ ওপেন করা **
+        // ** URL ফিক্সড ফাংশন **
         function checkUrlAndOpenModal(dataList) {
             const urlParams = new URLSearchParams(window.location.search);
             const viewSlug = urlParams.get('view');
 
             if (viewSlug) {
-                // URL এর স্ল্যাগ ডিকোড ও ছোট হাতের করা
                 const targetSlug = decodeURIComponent(viewSlug).trim().toLowerCase();
-                
-                // ডাটাবেস থেকে টাইটেল মিলিয়ে দেখা
                 const foundItem = dataList.find(item => {
                     if (!item.title) return false; 
-                    // টাইটেল থেকে স্ল্যাগ তৈরি (ঠিক যেমন openModal তৈরি করে)
                     const itemSlug = item.title.trim().replace(/\s+/g, '-').toLowerCase();
                     return itemSlug === targetSlug;
                 });
 
                 if (foundItem) {
                     const timeStr = timeAgo(foundItem.timestamp);
-                    // মোডাল ওপেন (হিস্ট্রি পুশ ছাড়া)
                     window.openModal(foundItem, timeStr, false); 
                 }
             }
         }
-
 
         // ৩. গ্রিড রেন্ডারার
         window.renderGrid = (list, containerId) => {
             const container = document.getElementById(containerId);
             container.innerHTML = "";
             
-            if(list.length === 0) {
-                container.innerHTML = "<p style='text-align:center'>No Data Found</p>";
+            if(!list || list.length === 0) {
+                if(containerId === 'contentGrid') container.innerHTML = "<p style='text-align:center'>No Data Available</p>";
                 return;
             }
 
@@ -89,7 +124,6 @@
                 const timeStr = timeAgo(item.timestamp);
                 const card = document.createElement('div');
                 card.className = 'card';
-                // ইউজার ক্লিকের জন্য pushHistory=true
                 card.onclick = () => window.openModal(item, timeStr, true);
                 card.innerHTML = `
                     <div class="thumbnail-container">
@@ -98,7 +132,7 @@
                     <div class="card-meta">
                         <img src="${adminAvatar}" class="channel-icon">
                         <div class="text-info">
-                            <div class="card-title">${item.title}</div>
+                            <div class="card-title">${item.title || 'Untitled'}</div>
                             <div class="card-subtitle">Rating: ${item.rating || 'N/A'} • ${timeStr}</div>
                         </div>
                     </div>
@@ -107,13 +141,11 @@
             });
         };
 
-        // ৪. টাইম Ago ফাংশন
+        // ৪. টাইম Ago
         function timeAgo(ts) {
             if(!ts) return "Recently";
-            // API থেকে টাইমস্ট্যাম্প স্ট্রিং হিসেবে আসতে পারে
             const dateNum = typeof ts === 'number' ? ts : Date.parse(ts);
             if(isNaN(dateNum)) return "Recently";
-            
             const sec = Math.floor((Date.now() - dateNum)/1000);
             if(sec>86400) return Math.floor(sec/86400) + " days ago";
             if(sec>3600) return Math.floor(sec/3600) + " hours ago";
@@ -121,7 +153,7 @@
             return "Just now";
         }
 
-        // ৫. মোডাল এবং URL হ্যান্ডলিং (আপডেট করা হয়েছে)
+        // ৫. মোডাল
         window.openModal = (item, time, pushHistory = true) => {
             currentItem = item;
             document.getElementById('modalImg').src = item.imgLink;
@@ -129,26 +161,21 @@
             document.getElementById('modalPrompt').innerText = item.prompt;
             document.getElementById('modalMeta').innerText = `Posted: ${time} • Rating: ${item.rating || 'N/A'}`;
             
-            // URL তৈরি (স্পেস সরিয়ে ড্যাশ)
-            const slug = item.title.trim().replace(/\s+/g, '-');
+            const slug = item.title ? item.title.trim().replace(/\s+/g, '-') : 'item';
             const newUrl = `?view=${encodeURIComponent(slug)}`;
             
-            // হিস্ট্রিতে পুশ করা (যদি ইউজার ক্লিক করে থাকে)
             if(pushHistory) {
                 window.history.pushState({modalOpen: true, itemId: item.id}, "", newUrl);
             }
 
             const cBox = document.getElementById('modalComments');
             cBox.innerHTML = "";
-            
-            // কমেন্টস হ্যান্ডলিং
             const comments = item.comments ? (Array.isArray(item.comments) ? item.comments : Object.values(item.comments)) : [];
             
             if(comments.length > 0) {
                 comments.forEach(c => {
-                    const commentText = c.text || c;
                     cBox.innerHTML += `<div style="border-bottom:1px dashed var(--border-color); padding:5px 0; margin-bottom:5px;">
-                        <span style="color:var(--accent-color); font-weight:bold;">Visitor:</span> ${commentText}
+                        <span style="color:var(--accent-color); font-weight:bold;">Visitor:</span> ${c.text || c}
                     </div>`;
                 });
             } else {
@@ -159,7 +186,6 @@
             saveHistory(item);
         }
 
-        // মোডাল ক্লোজ করা
         window.closeModal = () => {
             if (window.location.search.includes("view=")) {
                 window.history.back();
@@ -168,12 +194,10 @@
             }
         }
 
-        // ব্রাউজারের ব্যাক বাটন হ্যান্ডেল করা
         window.onpopstate = (event) => {
             document.getElementById('detailModal').style.display = 'none';
         };
 
-        // ৬. কপি এবং শেয়ার
         window.copyPrompt = () => {
             navigator.clipboard.writeText(document.getElementById('modalPrompt').innerText);
             alert("Copied!");
@@ -185,9 +209,8 @@
             try { await navigator.share(data); } catch { alert("Link copied!"); navigator.clipboard.writeText(data.text); }
         }
         
-        // কমেন্ট পোস্ট (বর্তমানে শুধু অ্যালার্ট দেবে)
         document.getElementById('postComment').addEventListener('click', () => {
-            alert("Comment posting is currently disabled as it requires a specific API endpoint for posting.");
+            alert("Posting comments needs backend setup.");
         });
 
         // ৭. সেটিংস ও নেভিগেশন
