@@ -1,7 +1,6 @@
 // --- Supabase কনফিগারেশন ---
 // আপনার তৈরি করা নতুন ফাংশনের লিংক
 const API_URL = "https://bnlxkclylntwrgrprakq.supabase.co/functions/v1/swift-endpoint";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
 
 // --- মেইন লজিক ---
