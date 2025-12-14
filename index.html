@@ -273,80 +273,94 @@
         <div class="nav-item" onclick="switchTab('settingPage', this)"><i class="fas fa-cog"></i> Settings</div>
     </nav>
 
-    <script type="module">
+       <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Firebase Config
-        const firebaseConfig = {
-            
-            databaseURL: "https://movie-box-b4daf-default-rtdb.firebaseio.com",
-            
-            
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        // --- মেইন লজিক ---
-        let adminAvatar = "https://via.placeholder.com/36"; 
-        
+        // --- গ্লোবাল ভেরিয়েবল ---
+        let db; // ডাটাবেস পরে ইনিশিয়ালাইজ হবে
+        let adminAvatar = "https://via.placeholder.com/36";
         let allData = [];
         let currentItem = null;
 
-        // ১. ডাটাবেস থেকে অবতার চেক করা
-        const settingsRef = ref(db, 'settings/adminAvatar');
-        onValue(settingsRef, (snap) => {
-            const url = snap.val();
-            if(url) {
-                adminAvatar = url;
-                document.querySelectorAll('.channel-icon').forEach(img => {
-                    img.src = adminAvatar;
-                });
-            }
-        });
-
-        // ২. কার্ড ডাটা লোড এবং URL চেক
-        onValue(ref(db, 'prompts/'), (snapshot) => {
-            const data = snapshot.val();
-            allData = [];
-            if (data) {
-                Object.keys(data).forEach(key => allData.push({ id: key, ...data[key] }));
-                allData.reverse(); // নতুন ডাটা আগে দেখাবে
+        // --- সিস্টেম শুরু করার ফাংশন ---
+        async function initSystem() {
+            try {
+                // ১. সুপাবেস থেকে ডাটাবেস URL আনা
+                const response = await fetch("https://bnlxkclylntwrgrprakq.supabase.co/functions/v1/swift-endpoint");
+                const configData = await response.json(); 
                 
-                renderGrid(allData, 'contentGrid');
-                renderGrid(allData.filter(d => parseFloat(d.rating) >= 4.5), 'trendingGrid');
+                // নোট: আপনার সুপাবেস ফাংশন যেন এই ফরম্যাটে JSON রিটার্ন করে: { "databaseURL": "আপনার_ফায়ারবেস_লিংক" }
 
-                // --- নতুন অংশ শুরু: URL চেক করা ---
-                const urlParams = new URLSearchParams(window.location.search);
-                const viewSlug = urlParams.get('view');
+                // ২. ফায়ারবেস সেটআপ
+                const firebaseConfig = {
+                    databaseURL: configData.databaseURL
+                };
 
-                if (viewSlug) {
-                    // স্লাগ ডিকোড করা
-                    const decodedSlug = decodeURIComponent(viewSlug);
-                    
-                    // স্লাগ অনুযায়ী আইটেম খোঁজা
-                    const targetItem = allData.find(item => {
-                        const itemSlug = item.title.trim().replace(/\s+/g, '-');
-                        return itemSlug === decodedSlug;
-                    });
+                const app = initializeApp(firebaseConfig);
+                db = getDatabase(app);
 
-                    // যদি আইটেম পাওয়া যায়, মোডাল ওপেন করা
-                    if (targetItem) {
-                        // সামান্য ডিলে দিয়ে ওপেন করা যাতে ইউজার বুঝতে পারে
-                        setTimeout(() => {
-                            openModal(targetItem, timeAgo(targetItem.timestamp));
-                        }, 500);
-                    }
-                }
-                // --- নতুন অংশ শেষ ---
+                // ৩. লিসেনার চালু করা
+                startDatabaseListeners();
 
-            } else {
-                document.getElementById('contentGrid').innerHTML = "<p style='text-align:center'>No Data</p>";
+            } catch (error) {
+                console.error("Setup Error:", error);
+                document.getElementById('contentGrid').innerHTML = "<p style='text-align:center; padding:20px;'>Error connecting to server.</p>";
             }
-        });
+        }
 
-        // ৩. গ্রিড রেন্ডারার
+        // --- ডাটাবেস লিসেনার এবং মেইন লজিক ---
+        function startDatabaseListeners() {
+            // ১. অ্যাডমিন অবতার লোড
+            const settingsRef = ref(db, 'settings/adminAvatar');
+            onValue(settingsRef, (snap) => {
+                const url = snap.val();
+                if(url) {
+                    adminAvatar = url;
+                    document.querySelectorAll('.channel-icon').forEach(img => {
+                        img.src = adminAvatar;
+                    });
+                }
+            });
+
+            // ২. কার্ড ডাটা লোড এবং URL হ্যান্ডলিং
+            onValue(ref(db, 'prompts/'), (snapshot) => {
+                const data = snapshot.val();
+                allData = [];
+                if (data) {
+                    Object.keys(data).forEach(key => allData.push({ id: key, ...data[key] }));
+                    allData.reverse();
+                    
+                    renderGrid(allData, 'contentGrid');
+                    renderGrid(allData.filter(d => parseFloat(d.rating) >= 4.5), 'trendingGrid');
+
+                    // --- URL চেক লজিক (Deep Linking) ---
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const viewSlug = urlParams.get('view');
+
+                    if (viewSlug) {
+                        const decodedSlug = decodeURIComponent(viewSlug);
+                        // টাইটেল থেকে স্লাগ মিলিয়ে আইটেম খোঁজা
+                        const targetItem = allData.find(item => {
+                            const itemSlug = item.title.trim().replace(/\s+/g, '-');
+                            return itemSlug === decodedSlug;
+                        });
+
+                        if (targetItem) {
+                            // ডাটা আসার পর একটু সময় নিয়ে মোডাল ওপেন হবে
+                            setTimeout(() => {
+                                openModal(targetItem, timeAgo(targetItem.timestamp));
+                            }, 500);
+                        }
+                    }
+
+                } else {
+                    document.getElementById('contentGrid').innerHTML = "<p style='text-align:center'>No Data</p>";
+                }
+            });
+        }
+
+        // --- গ্রিড রেন্ডারার ---
         window.renderGrid = (list, containerId) => {
             const container = document.getElementById(containerId);
             container.innerHTML = "";
@@ -371,7 +385,7 @@
             });
         };
 
-        // ৪. টাইম Ago ফাংশন
+        // --- সময় কনভার্টার ---
         function timeAgo(ts) {
             if(!ts) return "Recently";
             const sec = Math.floor((Date.now()-ts)/1000);
@@ -381,7 +395,7 @@
             return "Just now";
         }
 
-        // ৫. মোডাল এবং URL হ্যান্ডলিং (নতুন আপডেট)
+        // --- মোডাল ওপেন এবং ক্লোজ ---
         window.openModal = (item, time) => {
             currentItem = item;
             document.getElementById('modalImg').src = item.imgLink;
@@ -389,13 +403,12 @@
             document.getElementById('modalPrompt').innerText = item.prompt;
             document.getElementById('modalMeta').innerText = `Posted: ${time} • Rating: ${item.rating}`;
             
-            // URL তৈরি এবং আপডেট করা
+            // URL আপডেট করা (যাতে শেয়ার করা যায়)
             const slug = item.title.trim().replace(/\s+/g, '-');
             const newUrl = `?view=${encodeURIComponent(slug)}`;
-            
-            // ব্রাউজার হিস্ট্রিতে পুশ করা (যাতে Back Button কাজ করে)
             window.history.pushState({modalOpen: true, itemId: item.id}, "", newUrl);
 
+            // কমেন্টস লোড
             const cBox = document.getElementById('modalComments');
             cBox.innerHTML = "";
             if(item.comments) {
@@ -410,24 +423,19 @@
             saveHistory(item);
         }
 
-        // মোডাল ক্লোজ করা
         window.closeModal = () => {
-            // যদি URL এ প্যারামিটার থাকে, তাহলে Back করে সেটা রিমুভ করি
-            // এতে করে popstate ট্রিগার হবে এবং মোডাল বন্ধ হবে
             if (window.location.search.includes("view=")) {
-                window.history.back();
+                window.history.back(); // URL ক্লিন করার জন্য ব্যাক করবে
             } else {
                 document.getElementById('detailModal').style.display = 'none';
             }
         }
 
-        // ব্রাউজারের ব্যাক বাটন হ্যান্ডেল করা
         window.onpopstate = (event) => {
-            // যখন ইউজার ব্যাক করবে, মোডাল হাইড করে দেব
             document.getElementById('detailModal').style.display = 'none';
         };
 
-        // ৬. কপি এবং শেয়ার
+        // --- কপি এবং শেয়ার ---
         window.copyPrompt = () => {
             navigator.clipboard.writeText(document.getElementById('modalPrompt').innerText);
             alert("Copied!");
@@ -437,15 +445,19 @@
             const data = { title: currentItem.title, text: `Check this AI Art!\n${currentItem.title}\n${window.location.href}`, url: window.location.href };
             try { await navigator.share(data); } catch { alert("Link copied!"); navigator.clipboard.writeText(data.text); }
         }
+
+        // --- কমেন্ট পোস্ট ---
         document.getElementById('postComment').addEventListener('click', () => {
             const txt = document.getElementById('commentInput').value;
-            if(currentItem && txt) {
+            if(currentItem && txt && db) {
                 push(ref(db, `prompts/${currentItem.id}/comments`), { text: txt, timestamp: serverTimestamp() });
                 document.getElementById('commentInput').value = "";
+            } else if (!db) {
+                alert("Database not connected yet!");
             }
         });
 
-        // ৭. সেটিংস ও নেভিগেশন
+        // --- সেটিংস এবং নেভিগেশন ---
         window.openThemeSelector = () => document.getElementById('themeModal').classList.add('active');
         window.closeThemeSelector = () => document.getElementById('themeModal').classList.remove('active');
         window.setTheme = t => { document.body.className = t; localStorage.setItem('theme', t); closeThemeSelector(); }
@@ -474,6 +486,7 @@
             document.getElementById(id).classList.add('active');
         }
 
+        // --- সার্চ লজিক ---
         const sInput = document.getElementById('searchInput');
         const sBox = document.getElementById('suggestionsBox');
         sInput.addEventListener('input', function() {
@@ -493,7 +506,11 @@
             if(document.getElementById('homePage').classList.contains('active')) renderGrid(filtered, 'contentGrid');
         });
         document.onclick=(e)=>{ if(!e.target.closest('.search-container')) sBox.style.display='none'; }
-    </script>
+
+        // --- সবশেষে সিস্টেম কল ---
+        initSystem();
+
+       </script>                 
 </body>
 </html>
        
