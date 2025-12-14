@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Prompt Hub</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* --- CSS ভেরিয়েবলস --- */
+        :root {
+            --bg-primary: linear-gradient(180deg, #2b1055 0%, #7597de 100%);
+            --bg-secondary: rgba(255, 255, 255, 0.1); 
+            --text-primary: #ffffff;
+            --text-secondary: #e0e0e0;
+            --nav-bg: rgba(20, 20, 40, 0.9);
+            --border-color: rgba(255, 255, 255, 0.2);
+            --glass-effect: blur(10px);
+            --accent-color: #ff0000;
+        }
+
+        /* থিম ক্লাসসমূহ */
+        body.theme-light { --bg-primary: #f5f5f5; --bg-secondary: #ffffff; --text-primary: #0f0f0f; --text-secondary: #606060; --nav-bg: #ffffff; --border-color: #e0e0e0; --glass-effect: none; }
+        body.theme-dark { --bg-primary: #121212; --bg-secondary: #1e1e1e; --text-primary: #ffffff; --text-secondary: #aaaaaa; --nav-bg: #1e1e1e; --border-color: #333; }
+        body.theme-neon { --bg-primary: #050510; --bg-secondary: #0f0f20; --text-primary: #00f2ff; --text-secondary: #b000ff; --nav-bg: #0f0f20; --border-color: #00f2ff; --accent-color: #00f2ff; }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; padding-bottom: 70px; background-attachment: fixed; }
+
+        /* হেডার */
+        header {
+            position: sticky; top: 0; z-index: 100;
+            background: var(--nav-bg); backdrop-filter: var(--glass-effect);
+            padding: 10px 15px; display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .logo { font-size: 20px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 5px; }
+        
+        /* সার্চ বার */
+        .search-container { position: relative; width: 70%; }
+        .search-box {
+            display: flex; align-items: center;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 25px; padding: 8px 15px;
+        }
+        .search-box input {
+            background: transparent; border: none; outline: none; color: var(--text-primary); width: 100%; margin-left: 8px; font-size: 15px;
+        }
+        .suggestions-box {
+            position: absolute; top: 110%; left: 0; width: 100%;
+            background: var(--nav-bg); border-radius: 10px; z-index: 101;
+            display: none; border: 1px solid var(--border-color);
+        }
+        .suggestion-item { padding: 12px; border-bottom: 1px solid var(--border-color); cursor: pointer; font-size: 14px; }
+
+        /* --- YouTube Card Style --- */
+        .grid-container {
+            padding: 0; max-width: 600px; margin: 0 auto;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .card {
+            background: transparent; cursor: pointer; padding-bottom: 15px; margin-bottom: 5px;
+        }
+        .thumbnail-container {
+            width: 100%; position: relative; padding-top: 56.25%; /* 16:9 */
+            background: #000; overflow: hidden;
+        }
+        .card-img {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;
+        }
+        .card-meta {
+            display: flex; padding: 12px 12px 0 12px; align-items: flex-start;
+        }
+        .channel-icon {
+            width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+            margin-right: 12px; flex-shrink: 0; background: #333; border: 1px solid var(--border-color);
+        }
+        .text-info { flex: 1; display: flex; flex-direction: column; }
+        .card-title {
+            font-size: 16px; font-weight: 500; line-height: 1.3; margin-bottom: 4px;
+            color: var(--text-primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .card-subtitle { font-size: 12px; color: var(--text-secondary); }
+
+        /* সেটিংস মেনু */
+        .settings-list { padding: 15px; max-width: 600px; margin: 0 auto; }
+        .setting-card {
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            padding: 15px; margin-bottom: 10px; border-radius: 12px;
+            display: flex; align-items: center; cursor: pointer; backdrop-filter: var(--glass-effect);
+        }
+        .setting-icon { margin-right: 15px; font-size: 18px; color: var(--text-primary); }
+        .setting-text { flex: 1; font-weight: 500; font-size: 15px; }
+
+        /* Contact Page Buttons */
+        .contact-btn {
+            background: var(--bg-secondary); color: var(--text-primary); padding: 12px;
+            border-radius: 10px; display: flex; align-items: center; margin-bottom: 10px;
+            text-decoration: none; border: 1px solid var(--border-color);
+        }
+        .contact-btn i { font-size: 20px; margin-right: 15px; }
+
+        /* Theme Modal */
+        .theme-modal {
+            position: fixed; bottom: -100%; left: 0; width: 100%;
+            background: var(--nav-bg); border-radius: 20px 20px 0 0; padding: 20px;
+            z-index: 2000; transition: bottom 0.3s; border-top: 1px solid var(--border-color);
+        }
+        .theme-modal.active { bottom: 0; }
+        .theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .theme-option { border: 2px solid var(--border-color); border-radius: 10px; padding: 10px; text-align: center; cursor: pointer; }
+        .theme-preview { height: 40px; border-radius: 5px; margin-bottom: 5px; }
+
+        /* Detail Modal */
+        .full-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 3000; overflow-y: auto;
+        }
+        .full-modal-content {
+            background: var(--nav-bg); min-height: 100%; padding: 20px; color: var(--text-primary);
+        }
+        .prompt-box { background: var(--bg-secondary); padding: 15px; border-radius: 8px; font-family: monospace; margin: 15px 0; border: 1px dashed var(--border-color); user-select: text; }
+        
+        .action-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+        .action-btn { flex: 1; padding: 10px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .copy-btn { background: var(--accent-color); color: white; }
+        .share-btn { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); }
+
+        /* Bottom Nav & Pages */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--nav-bg); border-top: 1px solid var(--border-color);
+            display: flex; justify-content: space-around; padding: 10px 0;
+            z-index: 999; backdrop-filter: var(--glass-effect);
+        }
+        .nav-item { text-align: center; color: var(--text-secondary); width: 25%; font-size: 10px; cursor: pointer; }
+        .nav-item.active { color: var(--accent-color); }
+        .nav-item i { font-size: 20px; margin-bottom: 4px; display: block; }
+        .page { display: none; padding-top: 10px; }
+        .page.active { display: block; }
+
+    </style>
+</head>
+<body class="theme-gradient">
+
+    <header>
+        <div class="logo"><i class="fab fa-youtube"></i> AiHub</div>
+        <div class="search-container">
+            <div class="search-box">
+                <i class="fas fa-search" style="color:var(--text-secondary)"></i>
+                <input type="text" id="searchInput" placeholder="Search...">
+            </div>
+            <div class="suggestions-box" id="suggestionsBox"></div>
+        </div>
+    </header>
+
+    <div id="homePage" class="page active">
+        <div class="grid-container" id="contentGrid">
+            <p style="text-align:center; padding:20px;">Loading...</p>
+        </div>
+    </div>
+
+    <div id="trendingPage" class="page">
+        <h3 style="padding: 10px 15px; color: var(--accent-color);">🔥 Trending (4.5+)</h3>
+        <div class="grid-container" id="trendingGrid"></div>
+    </div>
+
+    <div id="contactPage" class="page" style="padding: 20px; max-width: 600px; margin: 0 auto;">
+        <h2>Connect</h2>
+        <a href="mailto:minhaj7b118b11@gmail.com" class="contact-btn"><i class="fas fa-envelope" style="color: #DB4437;"></i> Email</a>
+        <a href="https://t.me/minhajcode" target="_blank" class="contact-btn"><i class="fab fa-telegram" style="color: #0088CC;"></i> Telegram</a>
+        <a href="#" class="contact-btn"><i class="fab fa-youtube" style="color: #FF0000;"></i> YouTube</a>
+        <a href="#" class="contact-btn"><i class="fab fa-facebook" style="color: #1877F2;"></i> Facebook</a>
+    </div>
+
+    <div id="settingPage" class="page">
+        <div class="settings-list">
+            <h2 style="margin: 0 0 20px 0; text-align: center;">Settings</h2>
+            
+            <div class="setting-card" onclick="openThemeSelector()">
+                <i class="fas fa-palette setting-icon"></i>
+                <span class="setting-text">Themes</span>
+                <i class="fas fa-chevron-right" style="opacity:0.5; font-size:12px;"></i>
+            </div>
+            
+            <div class="setting-card" onclick="openHistoryPage()">
+                <i class="fas fa-history setting-icon"></i>
+                <span class="setting-text">Watch History</span>
+                <i class="fas fa-chevron-right" style="opacity:0.5; font-size:12px;"></i>
+            </div>
+
+            <div class="setting-card" onclick="shareApp()">
+                <i class="fas fa-share-alt setting-icon"></i>
+                <span class="setting-text">Share Application</span>
+            </div>
+
+            <a href="https://your-privacy-link.com" target="_blank" style="text-decoration:none; color:inherit;">
+                <div class="setting-card">
+                    <i class="fas fa-shield-alt setting-icon"></i>
+                    <span class="setting-text">Privacy Policy</span>
+                    <i class="fas fa-external-link-alt" style="opacity:0.5; font-size:12px;"></i>
+                </div>
+            </a>
+
+            <a href="https://your-help-link.com" target="_blank" style="text-decoration:none; color:inherit;">
+                <div class="setting-card">
+                    <i class="fas fa-question-circle setting-icon"></i>
+                    <span class="setting-text">Help & Support</span>
+                    <i class="fas fa-external-link-alt" style="opacity:0.5; font-size:12px;"></i>
+                </div>
+            </a>
+            
+             <div class="setting-card" onclick="window.location.href='admin.html'">
+                <i class="fas fa-user-shield setting-icon"></i>
+                <span class="setting-text">Admin Panel</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="historyPage" class="page">
+        <div style="padding:15px; display:flex; align-items:center;">
+            <i class="fas fa-arrow-left" onclick="showPage('settingPage')" style="font-size:20px; margin-right:15px; cursor:pointer;"></i>
+            <h3>Watch History</h3>
+        </div>
+        <div class="grid-container" id="historyGrid"></div>
+    </div>
+
+    <div class="full-modal" id="detailModal">
+        <span onclick="closeModal()" style="position:absolute; top:15px; right:15px; font-size:24px; cursor:pointer; z-index:3002;">&times;</span>
+        <div class="full-modal-content">
+            <img src="" id="modalImg" style="width:100%; border-radius:10px; margin-bottom:15px;">
+            <h2 id="modalTitle" style="font-size:18px; margin-bottom:5px;">Title</h2>
+            <div id="modalMeta" style="color:var(--text-secondary); font-size:13px; margin-bottom:20px;"></div>
+            
+            <div class="action-buttons">
+                <button class="action-btn copy-btn" onclick="copyPrompt()">
+                    <i class="fas fa-copy"></i> Copy Prompt
+                </button>
+                <button class="action-btn share-btn" onclick="shareItem()">
+                    <i class="fab fa-whatsapp"></i> Share
+                </button>
+            </div>
+
+            <h4>Prompt:</h4>
+            <div class="prompt-box" id="modalPrompt"></div>
+
+            <h4 style="margin-top:20px;">Comments</h4>
+            <div id="modalComments" style="margin-bottom:15px; font-size:13px; opacity:0.8; max-height:150px; overflow-y:auto;"></div>
+            <div style="display:flex;">
+                <input type="text" id="commentInput" placeholder="Add comment..." style="flex:1; padding:10px; border-radius:5px; border:none;">
+                <button id="postComment" style="margin-left:10px; padding:0 15px; background:var(--accent-color); color:white; border:none; border-radius:5px;">Post</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="theme-modal" id="themeModal">
+        <div style="display:flex; justify-content:space-between;">
+            <h3>Select Theme</h3>
+            <span onclick="closeThemeSelector()" style="cursor:pointer; font-size:20px;">&times;</span>
+        </div>
+        <div class="theme-grid">
+            <div class="theme-option" onclick="setTheme('theme-gradient')"><div class="theme-preview" style="background:linear-gradient(135deg, #2b1055, #7597de);"></div>Luxe</div>
+            <div class="theme-option" onclick="setTheme('theme-neon')"><div class="theme-preview" style="background:#000; border:1px solid cyan;"></div>Neon</div>
+            <div class="theme-option" onclick="setTheme('theme-dark')"><div class="theme-preview" style="background:#121212;"></div>Dark</div>
+            <div class="theme-option" onclick="setTheme('theme-light')"><div class="theme-preview" style="background:#f5f5f5;"></div>Light</div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('homePage', this)"><i class="fas fa-home"></i> Home</div>
+        <div class="nav-item" onclick="switchTab('trendingPage', this)"><i class="fas fa-fire"></i> Trending</div>
+        <div class="nav-item" onclick="switchTab('contactPage', this)"><i class="fas fa-envelope"></i> Contact</div>
+        <div class="nav-item" onclick="switchTab('settingPage', this)"><i class="fas fa-cog"></i> Settings</div>
+    </nav>
+
+                           <script>
+        // --- গ্লোবাল ভেরিয়েবল ---
+        let adminAvatar = "https://via.placeholder.com/36";
+        let allData = [];
+        let currentItem = null;
+
+        // আপনার Supabase ফাংশন লিংক
+        const API_URL = "https://ambylxvsxgxfgzpxzwpr.supabase.co/functions/v1/bright-worker";
+
+        // --- ১. সিস্টেম শুরু (ডাটা লোড) ---
+        async function initSystem() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error("Server Error");
+
+                const result = await response.json();
+                
+                // ১.১ অবতার সেট করা
+                if(result.avatar) {
+                    adminAvatar = result.avatar;
+                    document.querySelectorAll('.channel-icon').forEach(img => img.src = adminAvatar);
+                }
+
+                // ১.২ প্রম্পট ডাটা প্রসেস করা
+                const data = result.prompts;
+                allData = [];
+                if (data) {
+                    Object.keys(data).forEach(key => allData.push({ id: key, ...data[key] }));
+                    allData.reverse();
+                    
+                    renderGrid(allData, 'contentGrid');
+                    renderGrid(allData.filter(d => parseFloat(d.rating) >= 4.5), 'trendingGrid');
+                    checkDeepLink();
+                } else {
+                    document.getElementById('contentGrid').innerHTML = "<p style='text-align:center'>No Data Found</p>";
+                }
+
+            } catch (error) {
+                console.error("Load Error:", error);
+                document.getElementById('contentGrid').innerHTML = `<p style='text-align:center;color:red'>Failed to load data.</p>`;
+            }
+        }
+
+        // --- ২. কমেন্ট পোস্ট ফাংশন (নতুন) ---
+        document.getElementById('postComment').addEventListener('click', async () => {
+            const txtInput = document.getElementById('commentInput');
+            const txt = txtInput.value;
+            const btn = document.getElementById('postComment');
+
+            if (currentItem && txt) {
+                // ইউজারকে ফিডব্যাক দেওয়া
+                btn.innerText = "Posting...";
+                btn.disabled = true;
+
+                try {
+                    // Supabase-এ কমেন্ট পাঠানো (POST Request)
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            itemId: currentItem.id,
+                            text: txt
+                        })
+                    });
+
+                    if (!response.ok) throw new Error("Post failed");
+
+                    // সফল হলে লোকালে অ্যাড করে দেখানো (রিলোড ছাড়া)
+                    const cBox = document.getElementById('modalComments');
+                    const noComMsg = cBox.querySelector('p');
+                    if(noComMsg && noComMsg.innerText === "No comments yet.") noComMsg.remove();
+
+                    cBox.innerHTML += `<div style="border-bottom:1px dashed var(--border-color); padding:5px 0; margin-bottom:5px;">
+                        <span style="color:var(--accent-color); font-weight:bold;">You:</span> ${txt}
+                    </div>`;
+                    
+                    // স্ক্রল নিচে নামানো
+                    cBox.scrollTop = cBox.scrollHeight;
+
+                    txtInput.value = "";
+                    alert("Comment Posted Successfully!");
+
+                } catch (error) {
+                    alert("Error posting comment: " + error.message);
+                } finally {
+                    btn.innerText = "Post";
+                    btn.disabled = false;
+                }
+            }
+        });
+
+        // --- ৩. গ্রিড রেন্ডারার ---
+        function renderGrid(list, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = "";
+            list.forEach(item => {
+                const timeStr = timeAgo(item.timestamp);
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => openModal(item, timeStr);
+                card.innerHTML = `
+                    <div class="thumbnail-container">
+                        <img src="${item.imgLink}" class="card-img" onerror="this.src='https://via.placeholder.com/480x270'">
+                    </div>
+                    <div class="card-meta">
+                        <img src="${adminAvatar}" class="channel-icon">
+                        <div class="text-info">
+                            <div class="card-title">${item.title}</div>
+                            <div class="card-subtitle">Rating: ${item.rating} • ${timeStr}</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        };
+
+        // --- ৪. ইউটিলিটি ---
+        function timeAgo(ts) {
+            if(!ts) return "Recently";
+            const sec = Math.floor((Date.now()-ts)/1000);
+            if(sec>86400) return Math.floor(sec/86400) + " days ago";
+            if(sec>3600) return Math.floor(sec/3600) + " hours ago";
+            if(sec>60) return Math.floor(sec/60) + " mins ago";
+            return "Just now";
+        }
+
+        // --- ৫. মোডাল ---
+        function openModal(item, time) {
+            currentItem = item;
+            document.getElementById('modalImg').src = item.imgLink;
+            document.getElementById('modalTitle').innerText = item.title;
+            document.getElementById('modalPrompt').innerText = item.prompt;
+            document.getElementById('modalMeta').innerText = `Posted: ${time} • Rating: ${item.rating}`;
+            
+            const slug = item.title.trim().replace(/\s+/g, '-');
+            const newUrl = `?view=${encodeURIComponent(slug)}`;
+            window.history.pushState({modalOpen: true, itemId: item.id}, "", newUrl);
+
+            const cBox = document.getElementById('modalComments');
+            cBox.innerHTML = "";
+            if(item.comments) {
+                Object.values(item.comments).forEach(c => {
+                    cBox.innerHTML += `<div style="border-bottom:1px dashed var(--border-color); padding:5px 0; margin-bottom:5px;">
+                        <span style="color:var(--accent-color); font-weight:bold;">Visitor:</span> ${c.text}
+                    </div>`;
+                });
+            } else cBox.innerHTML = "<p>No comments yet.</p>";
+
+            document.getElementById('detailModal').style.display = 'block';
+            saveHistory(item);
+        }
+
+        function closeModal() {
+            if (window.location.search.includes("view=")) window.history.back();
+            else document.getElementById('detailModal').style.display = 'none';
+        }
+        window.onpopstate = () => document.getElementById('detailModal').style.display = 'none';
+
+        function checkDeepLink() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewSlug = urlParams.get('view');
+            if (viewSlug) {
+                const decodedSlug = decodeURIComponent(viewSlug);
+                const targetItem = allData.find(item => {
+                    const itemSlug = item.title.trim().replace(/\s+/g, '-');
+                    return itemSlug === decodedSlug;
+                });
+                if (targetItem) setTimeout(() => openModal(targetItem, timeAgo(targetItem.timestamp)), 500);
+            }
+        }
+
+        // --- ৬. অ্যাকশন বাটন ---
+        function copyPrompt() {
+            navigator.clipboard.writeText(document.getElementById('modalPrompt').innerText);
+            alert("Copied!");
+        }
+        async function shareItem() {
+            if(!currentItem) return;
+            const data = { title: currentItem.title, text: `Check this AI Art!\n${currentItem.title}\n${window.location.href}`, url: window.location.href };
+            try { await navigator.share(data); } catch { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }
+        }
+
+        // --- ৭. সেটিংস ও অন্যান্য ---
+        function saveHistory(item) {
+            let hist = JSON.parse(localStorage.getItem('hist')) || [];
+            hist = hist.filter(h => h.id !== item.id);
+            hist.unshift(item);
+            localStorage.setItem('hist', JSON.stringify(hist));
+        }
+        
+        function openThemeSelector() { document.getElementById('themeModal').classList.add('active'); }
+        function closeThemeSelector() { document.getElementById('themeModal').classList.remove('active'); }
+        function setTheme(t) { document.body.className = t; localStorage.setItem('theme', t); closeThemeSelector(); }
+        document.body.className = localStorage.getItem('theme') || 'theme-gradient';
+
+        function openHistoryPage() { showPage('historyPage'); renderGrid(JSON.parse(localStorage.getItem('hist'))||[], 'historyGrid'); }
+        function shareApp() { navigator.clipboard.writeText(window.location.href); alert("App Link Copied!"); }
+
+        function switchTab(id, el) {
+            document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+            el.classList.add('active');
+        }
+        function showPage(id) {
+            document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        const sInput = document.getElementById('searchInput');
+        const sBox = document.getElementById('suggestionsBox');
+        sInput.addEventListener('input', function() {
+            const val = this.value.toLowerCase();
+            sBox.innerHTML = "";
+            if(!val) { sBox.style.display='none'; renderGrid(allData, 'contentGrid'); return; }
+            const filtered = allData.filter(d => d.title.toLowerCase().includes(val));
+            if(filtered.length > 0) {
+                sBox.style.display='block';
+                filtered.slice(0,5).forEach(item => {
+                    const d = document.createElement('div');
+                    d.className='suggestion-item'; d.innerText=item.title;
+                    d.onclick = () => { sInput.value=item.title; renderGrid([item], 'contentGrid'); sBox.style.display='none'; };
+                    sBox.appendChild(d);
+                });
+            } else sBox.style.display='none';
+            if(document.getElementById('homePage').classList.contains('active')) renderGrid(filtered, 'contentGrid');
+        });
+        document.onclick=(e)=>{ if(!e.target.closest('.search-container')) sBox.style.display='none'; }
+
+        // Start
+        initSystem();
+
+                           </script>
+
+</body>
+</html>
