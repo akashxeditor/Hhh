@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Prompt Hub - Loading...</title>
+    <style>
+        /* বেসিক স্টাইল */
+        body { font-family: sans-serif; background-color: #2b1055; color: white; margin: 0; }
+        header { background-color: #7597de; padding: 15px; text-align: center; }
+        .post-link { display: block; padding: 10px; border-bottom: 1px solid #444; text-decoration: none; color: white; }
+        .post-link:hover { background-color: #3b206f; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to AI Prompt Hub</h1>
+        <p>AI Avatar: <img id="adminAvatarImg" src="https://via.placeholder.com/36" width="36" height="36" style="border-radius: 50%; vertical-align: middle;"></p>
+    </header>
+    
+    <main id="appContent">
+        </main>
+
+    <script>
+        const appContent = document.getElementById('appContent');
+        
+        // *** সংশোধিত API Endpoint ***
+        const API_ENDPOINT = 'https://ambylxvsxgxfgzpxzwpr.supabase.co/functions/v1/bright-worker';
+        
+        const POST_TEMPLATE_FILE = 'post-details.html'; 
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewSlug = urlParams.get('view'); 
+        
+        // সমস্ত ডেটা লোড করার ফাংশন
+        async function fetchData() {
+            try {
+                const response = await fetch(API_ENDPOINT);
+                if (!response.ok) throw new Error('Failed to fetch data from Edge Function.');
+                
+                const data = await response.json();
+                
+                if (data.avatar) {
+                    document.getElementById('adminAvatarImg').src = data.avatar;
+                }
+                
+                renderHomePage(data.prompts);
+
+            } catch (error) {
+                appContent.innerHTML = `<h1>Error Loading Application: ${error.message}</h1>`;
+                console.error("Initialization Error:", error);
+            }
+        }
+
+        // হোমপেজ রেন্ডার করা (পোস্টের তালিকা)
+        function renderHomePage(prompts) {
+            document.title = "AI Prompt Hub";
+            appContent.innerHTML = '<h2>Latest Prompts</h2>';
+            const listDiv = document.createElement('div');
+            listDiv.style.maxWidth = '600px';
+            listDiv.style.margin = '20px auto';
+
+            if (prompts) {
+                Object.entries(prompts).reverse().forEach(([key, item]) => {
+                    const postSlug = item.title.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s]+/g, '-');
+                    const postLink = `index.html?view=${postSlug}`; 
+                    
+                    listDiv.innerHTML += `
+                        <a href="${postLink}" class="post-link">
+                            ${item.title} <span style="float:right;">(${item.rating} ★)</span>
+                        </a>
+                    `;
+                });
+            } else {
+                listDiv.innerHTML = "<p style='text-align:center;'>No prompts found.</p>";
+            }
+            appContent.appendChild(listDiv);
+        }
+
+        // সিঙ্গেল পোস্টের বিস্তারিত তথ্য রেন্ডার করা
+        async function renderPostDetails(slug) {
+            appContent.innerHTML = '<h1>Loading Post Details...</h1>';
+            
+            try {
+                // টেমপ্লেট লোড করা
+                const templateResponse = await fetch(POST_TEMPLATE_FILE);
+                if (!templateResponse.ok) throw new Error("Post template not found.");
+                const templateHTML = await templateResponse.text();
+                appContent.innerHTML = templateHTML;
+
+                // API থেকে ডেটা লোড করা
+                const apiResponse = await fetch(API_ENDPOINT);
+                const data = await apiResponse.json();
+                const prompts = data.prompts;
+                
+                let post = null;
+                const generateSlug = (title) => title.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s]+/g, '-');
+                
+                const targetEntry = Object.entries(prompts || {}).find(([id, entry]) => {
+                    return generateSlug(entry.title) === decodeURIComponent(slug).toLowerCase();
+                });
+
+                if (targetEntry) {
+                    post = targetEntry[1];
+                }
+
+                if (post) {
+                    document.getElementById('postHeading').innerText = post.title || 'No Title';
+                    document.getElementById('postImage').src = post.imgLink || 'https://via.placeholder.com/600';
+                    document.getElementById('postDescription').innerText = post.description || 'No Description';
+                    document.getElementById('postPrompt').innerText = post.prompt || 'No Prompt';
+                    document.getElementById('postRating').innerText = post.rating || 'N/A';
+                    document.title = post.title + " | AI Hub"; 
+                } else {
+                    appContent.innerHTML = `<h1>404 Post Not Found!</h1><p>The post slug <b>${slug}</b> did not match any entry.</p>`;
+                }
+
+            } catch (error) {
+                appContent.innerHTML = `<h1>Error Loading Content: ${error.message}</h1>`;
+                console.error("Loading Error:", error);
+            }
+        }
+
+        // --- রাউটিং শুরু ---
+        if (viewSlug) {
+            renderPostDetails(viewSlug);
+        } else {
+            fetchData(); 
+        }
+    </script>
+</body>
+</html>
