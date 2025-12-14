@@ -1,90 +1,84 @@
 // --- Supabase কনফিগারেশন ---
 // আপনার তৈরি করা নতুন ফাংশনের লিংক
 const API_URL = "https://bnlxkclylntwrgrprakq.supabase.co/functions/v1/swift-endpoint";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+// Firebase Config
+const firebaseConfig = {
+    databaseURL: "https://movie-box-b4daf-default-rtdb.firebaseio.com",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
 // --- মেইন লজিক ---
-let adminAvatar = "https://via.placeholder.com/36"; // ডিফল্ট অবতার
+let adminAvatar = "https://via.placeholder.com/36"; 
+
 let allData = [];
 let currentItem = null;
 
-// ১. পেজ লোড হলে Supabase থেকে ডাটা আনা
-document.addEventListener("DOMContentLoaded", () => {
-    loadData();
+// ১. ডাটাবেস থেকে অবতার চেক করা
+const settingsRef = ref(db, 'settings/adminAvatar');
+onValue(settingsRef, (snap) => {
+    const url = snap.val();
+    if(url) {
+        adminAvatar = url;
+        document.querySelectorAll('.channel-icon').forEach(img => {
+            img.src = adminAvatar;
+        });
+    }
 });
 
-async function loadData() {
-    const grid = document.getElementById('contentGrid');
-    // লোডিং এনিমেশন বা টেক্সট
-    if(grid) grid.innerHTML = "<p style='text-align:center; margin-top:20px;'>Loading content...</p>";
-
-    try {
-        const response = await fetch(API_URL);
+// ২. কার্ড ডাটা লোড ও URL হ্যান্ডলিং
+onValue(ref(db, 'prompts/'), (snapshot) => {
+    const data = snapshot.val();
+    allData = [];
+    if (data) {
+        Object.keys(data).forEach(key => allData.push({ id: key, ...data[key] }));
+        allData.reverse();
+        window.renderGrid(allData, 'contentGrid');
+        window.renderGrid(allData.filter(d => parseFloat(d.rating) >= 4.5), 'trendingGrid');
         
-        if (!response.ok) {
-            throw new Error(`Server Error: ${response.status}`);
-        }
+        // --- পেজ লোডের পরে URL চেক করা ---
+        checkUrlAndOpenModal(allData);
+        // ---------------------------------
 
-        const data = await response.json();
-        
-        // ডাটা প্রসেসিং (Object থেকে Array)
-        allData = [];
-        if (data) {
-            Object.keys(data).forEach(key => {
-                allData.push({ id: key, ...data[key] });
-            });
-            allData.reverse(); // নতুন পোস্ট আগে দেখাবে
-
-            // গ্রিড রেন্ডার করা
-            if(window.renderGrid) {
-                window.renderGrid(allData, 'contentGrid');
-                // ট্রেন্ডিং সেকশন (যাদের রেটিং ৪.৫ এর উপরে)
-                const trending = allData.filter(d => d.rating && parseFloat(d.rating) >= 4.5);
-                window.renderGrid(trending, 'trendingGrid');
-            }
-            
-            // URL চেক করে মোডাল ওপেন করা (যদি শেয়ার্ড লিংক থাকে)
-            checkUrlAndOpenModal(allData);
-
-        } else {
-            if(grid) grid.innerHTML = "<p style='text-align:center'>No Data Found</p>";
-        }
-
-    } catch (error) {
-        console.error("Error loading data:", error);
-        if(grid) grid.innerHTML = "<p style='text-align:center; color:red;'>Failed to load data. Please try again.</p>";
+    } else {
+        document.getElementById('contentGrid').innerHTML = "<p style='text-align:center'>No Data</p>";
     }
-}
+});
 
-// ** URL চেক করে মোডাল ওপেন করা **
+// **নতুন ফাংশন:** URL চেক করে মোডাল ওপেন করা
 function checkUrlAndOpenModal(dataList) {
     const urlParams = new URLSearchParams(window.location.search);
     const viewSlug = urlParams.get('view');
 
     if (viewSlug) {
-        // Slug থেকে আসল টাইটেল বের করা
+        // Slug থেকে আসল টাইটেল ফরমেটে নিয়ে আসা
         const titleToFind = decodeURIComponent(viewSlug).replace(/-/g, ' ').trim().toLowerCase();
         
+        // টাইটেল অনুযায়ী ডাটা খুঁজে বের করা
         const foundItem = dataList.find(item => item.title.toLowerCase() === titleToFind);
 
         if (foundItem) {
             const timeStr = timeAgo(foundItem.timestamp);
-            window.openModal(foundItem, timeStr, false); 
+            // মোডাল ওপেন করা
+            window.openModal(foundItem, timeStr, false); // false মানে হিস্ট্রি push দরকার নেই
         }
     }
 }
 
-// ২. গ্রিড রেন্ডারার
+
+// ৩. গ্রিড রেন্ডারার
 window.renderGrid = (list, containerId) => {
     const container = document.getElementById(containerId);
-    if(!container) return;
-
     container.innerHTML = "";
     list.forEach(item => {
         const timeStr = timeAgo(item.timestamp);
         const card = document.createElement('div');
         card.className = 'card';
-        card.onclick = () => window.openModal(item, timeStr, true);
-        
+        card.onclick = () => window.openModal(item, timeStr, true); // true মানে ইউজার ক্লিক করেছে
         card.innerHTML = `
             <div class="thumbnail-container">
                 <img src="${item.imgLink}" class="card-img" onerror="this.src='https://via.placeholder.com/480x270'">
@@ -93,7 +87,7 @@ window.renderGrid = (list, containerId) => {
                 <img src="${adminAvatar}" class="channel-icon">
                 <div class="text-info">
                     <div class="card-title">${item.title}</div>
-                    <div class="card-subtitle">Rating: ${item.rating || 'N/A'} • ${timeStr}</div>
+                    <div class="card-subtitle">Rating: ${item.rating} • ${timeStr}</div>
                 </div>
             </div>
         `;
@@ -101,7 +95,7 @@ window.renderGrid = (list, containerId) => {
     });
 };
 
-// ৩. টাইম Ago ফাংশন
+// ৪. টাইম Ago ফাংশন
 function timeAgo(ts) {
     if(!ts) return "Recently";
     const sec = Math.floor((Date.now()-ts)/1000);
@@ -111,20 +105,15 @@ function timeAgo(ts) {
     return "Just now";
 }
 
-// ৪. মোডাল এবং URL হ্যান্ডলিং
+// ৫. মোডাল এবং URL হ্যান্ডলিং
 window.openModal = (item, time, pushHistory = true) => {
     currentItem = item;
+    document.getElementById('modalImg').src = item.imgLink;
+    document.getElementById('modalTitle').innerText = item.title;
+    document.getElementById('modalPrompt').innerText = item.prompt;
+    document.getElementById('modalMeta').innerText = `Posted: ${time} • Rating: ${item.rating}`;
     
-    // সেফটি চেক: এলিমেন্ট আছে কিনা দেখে নেওয়া
-    const setIfExists = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
-    const setSrcIfExists = (id, val) => { const el = document.getElementById(id); if(el) el.src = val; };
-
-    setSrcIfExists('modalImg', item.imgLink);
-    setIfExists('modalTitle', item.title);
-    setIfExists('modalPrompt', item.prompt);
-    setIfExists('modalMeta', `Posted: ${time} • Rating: ${item.rating || 'N/A'}`);
-    
-    // URL আপডেট করা
+    // URL তৈরি করা
     const slug = item.title.trim().replace(/\s+/g, '-');
     const newUrl = `?view=${encodeURIComponent(slug)}`;
     
@@ -132,24 +121,17 @@ window.openModal = (item, time, pushHistory = true) => {
         window.history.pushState({modalOpen: true, itemId: item.id}, "", newUrl);
     }
 
-    // কমেন্ট সেকশন রেন্ডার
     const cBox = document.getElementById('modalComments');
-    if(cBox) {
-        cBox.innerHTML = "";
-        if(item.comments) {
-            Object.values(item.comments).forEach(c => {
-                cBox.innerHTML += `<div style="border-bottom:1px dashed var(--border-color); padding:5px 0; margin-bottom:5px;">
-                    <span style="color:var(--accent-color); font-weight:bold;">Visitor:</span> ${c.text}
-                </div>`;
-            });
-        } else {
-            cBox.innerHTML = "<p>No comments yet.</p>";
-        }
-    }
+    cBox.innerHTML = "";
+    if(item.comments) {
+        Object.values(item.comments).forEach(c => {
+            cBox.innerHTML += `<div style="border-bottom:1px dashed var(--border-color); padding:5px 0; margin-bottom:5px;">
+                <span style="color:var(--accent-color); font-weight:bold;">Visitor:</span> ${c.text}
+            </div>`;
+        });
+    } else cBox.innerHTML = "<p>No comments.</p>";
 
-    const modal = document.getElementById('detailModal');
-    if(modal) modal.style.display = 'block';
-    
+    document.getElementById('detailModal').style.display = 'block';
     saveHistory(item);
 }
 
@@ -158,54 +140,37 @@ window.closeModal = () => {
     if (window.location.search.includes("view=")) {
         window.history.back();
     } else {
-        const modal = document.getElementById('detailModal');
-        if(modal) modal.style.display = 'none';
+        document.getElementById('detailModal').style.display = 'none';
     }
 }
 
 // ব্রাউজারের ব্যাক বাটন হ্যান্ডেল করা
 window.onpopstate = (event) => {
-    const modal = document.getElementById('detailModal');
-    if(modal) modal.style.display = 'none';
+    document.getElementById('detailModal').style.display = 'none';
 };
 
-// ৫. কপি এবং শেয়ার
+// ৬. কপি এবং শেয়ার
 window.copyPrompt = () => {
-    const pText = document.getElementById('modalPrompt');
-    if(pText) {
-        navigator.clipboard.writeText(pText.innerText);
-        alert("Prompt Copied!");
-    }
+    navigator.clipboard.writeText(document.getElementById('modalPrompt').innerText);
+    alert("Copied!");
 }
 window.shareItem = async () => {
     if(!currentItem) return;
     const data = { title: currentItem.title, text: `Check this AI Art!\n${currentItem.title}\n${window.location.href}`, url: window.location.href };
     try { await navigator.share(data); } catch { alert("Link copied!"); navigator.clipboard.writeText(data.text); }
 }
+document.getElementById('postComment').addEventListener('click', () => {
+    const txt = document.getElementById('commentInput').value;
+    if(currentItem && txt) {
+        push(ref(db, `prompts/${currentItem.id}/comments`), { text: txt, timestamp: serverTimestamp() });
+        document.getElementById('commentInput').value = "";
+    }
+});
 
-// **নোট:** কমেন্ট পোস্ট বাটন হ্যান্ডলার (আপাতত ডিজেবল করা হয়েছে কারণ URL লুকানো আছে)
-const postBtn = document.getElementById('postComment');
-if(postBtn) {
-    postBtn.addEventListener('click', () => {
-        alert("Posting comments is currently disabled for security updates.");
-        // এখানে কমেন্ট পোস্ট করতে হলে আপনাকে আরেকটি Supabase Function বানাতে হবে।
-    });
-}
-
-// ৬. সেটিংস ও নেভিগেশন
-window.openThemeSelector = () => {
-    const m = document.getElementById('themeModal');
-    if(m) m.classList.add('active');
-}
-window.closeThemeSelector = () => {
-    const m = document.getElementById('themeModal');
-    if(m) m.classList.remove('active');
-}
-window.setTheme = t => { 
-    document.body.className = t; 
-    localStorage.setItem('theme', t); 
-    closeThemeSelector(); 
-}
+// ৭. সেটিংস ও নেভিগেশন
+window.openThemeSelector = () => document.getElementById('themeModal').classList.add('active');
+window.closeThemeSelector = () => document.getElementById('themeModal').classList.remove('active');
+window.setTheme = t => { document.body.className = t; localStorage.setItem('theme', t); closeThemeSelector(); }
 document.body.className = localStorage.getItem('theme') || 'theme-gradient';
 
 function saveHistory(item) {
@@ -214,51 +179,42 @@ function saveHistory(item) {
     hist.unshift(item);
     localStorage.setItem('hist', JSON.stringify(hist));
 }
-
 window.openHistoryPage = () => {
-    if(window.showPage) window.showPage('historyPage');
-    if(window.renderGrid) window.renderGrid(JSON.parse(localStorage.getItem('hist'))||[], 'historyGrid');
+    window.showPage('historyPage');
+    window.renderGrid(JSON.parse(localStorage.getItem('hist'))||[], 'historyGrid');
 }
 window.shareApp = () => { navigator.clipboard.writeText(window.location.href); alert("App Link Copied!"); }
 
 window.switchTab = (id, el) => {
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    const p = document.getElementById(id);
-    if(p) p.classList.add('active');
-
+    document.getElementById(id).classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-    if(el) el.classList.add('active');
+    el.classList.add('active');
 }
 window.showPage = id => {
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    const p = document.getElementById(id);
-    if(p) p.classList.add('active');
+    document.getElementById(id).classList.add('active');
 }
 
-// সার্চ লজিক
 const sInput = document.getElementById('searchInput');
 const sBox = document.getElementById('suggestionsBox');
-if(sInput && sBox) {
-    sInput.addEventListener('input', function() {
-        const val = this.value.toLowerCase();
-        sBox.innerHTML = "";
-        if(!val) { sBox.style.display='none'; window.renderGrid(allData, 'contentGrid'); return; }
+sInput.addEventListener('input', function() {
+    const val = this.value.toLowerCase();
+    sBox.innerHTML = "";
+    if(!val) { sBox.style.display='none'; window.renderGrid(allData, 'contentGrid'); return; }
+    const filtered = allData.filter(d => d.title.toLowerCase().includes(val));
+    if(filtered.length > 0) {
+        sBox.style.display='block';
+        filtered.slice(0,5).forEach(item => {
+            const d = document.createElement('div');
+            d.className='suggestion-item'; d.innerText=item.title;
+            d.onclick = () => { sInput.value=item.title; window.renderGrid([item], 'contentGrid'); sBox.style.display='none'; };
+            sBox.appendChild(d);
+        });
+    } else sBox.style.display='none';
+    if(document.getElementById('homePage').classList.contains('active')) window.renderGrid(filtered, 'contentGrid');
+});
+document.onclick=(e)=>{ if(!e.target.closest('.search-container')) sBox.style.display='none'; }
         
-        const filtered = allData.filter(d => d.title.toLowerCase().includes(val));
-        if(filtered.length > 0) {
-            sBox.style.display='block';
-            filtered.slice(0,5).forEach(item => {
-                const d = document.createElement('div');
-                d.className='suggestion-item'; d.innerText=item.title;
-                d.onclick = () => { sInput.value=item.title; window.renderGrid([item], 'contentGrid'); sBox.style.display='none'; };
-                sBox.appendChild(d);
-            });
-        } else sBox.style.display='none';
-        
-        const home = document.getElementById('homePage');
-        if(home && home.classList.contains('active')) window.renderGrid(filtered, 'contentGrid');
-    });
-}
-document.onclick=(e)=>{ 
-    if(sBox && !e.target.closest('.search-container')) sBox.style.display='none'; 
-}
+            
+    
