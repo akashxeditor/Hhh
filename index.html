@@ -306,15 +306,41 @@
             }
         });
 
-        // ২. কার্ড ডাটা লোড
+        // ২. কার্ড ডাটা লোড এবং URL চেক
         onValue(ref(db, 'prompts/'), (snapshot) => {
             const data = snapshot.val();
             allData = [];
             if (data) {
                 Object.keys(data).forEach(key => allData.push({ id: key, ...data[key] }));
-                allData.reverse();
+                allData.reverse(); // নতুন ডাটা আগে দেখাবে
+                
                 renderGrid(allData, 'contentGrid');
                 renderGrid(allData.filter(d => parseFloat(d.rating) >= 4.5), 'trendingGrid');
+
+                // --- নতুন অংশ শুরু: URL চেক করা ---
+                const urlParams = new URLSearchParams(window.location.search);
+                const viewSlug = urlParams.get('view');
+
+                if (viewSlug) {
+                    // স্লাগ ডিকোড করা
+                    const decodedSlug = decodeURIComponent(viewSlug);
+                    
+                    // স্লাগ অনুযায়ী আইটেম খোঁজা
+                    const targetItem = allData.find(item => {
+                        const itemSlug = item.title.trim().replace(/\s+/g, '-');
+                        return itemSlug === decodedSlug;
+                    });
+
+                    // যদি আইটেম পাওয়া যায়, মোডাল ওপেন করা
+                    if (targetItem) {
+                        // সামান্য ডিলে দিয়ে ওপেন করা যাতে ইউজার বুঝতে পারে
+                        setTimeout(() => {
+                            openModal(targetItem, timeAgo(targetItem.timestamp));
+                        }, 500);
+                    }
+                }
+                // --- নতুন অংশ শেষ ---
+
             } else {
                 document.getElementById('contentGrid').innerHTML = "<p style='text-align:center'>No Data</p>";
             }
@@ -398,7 +424,7 @@
         // ব্রাউজারের ব্যাক বাটন হ্যান্ডেল করা
         window.onpopstate = (event) => {
             // যখন ইউজার ব্যাক করবে, মোডাল হাইড করে দেব
-   document.getElementById('detailModal').style.display = 'none';
+            document.getElementById('detailModal').style.display = 'none';
         };
 
         // ৬. কপি এবং শেয়ার
@@ -470,3 +496,4 @@
     </script>
 </body>
 </html>
+       
