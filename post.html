@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <title>Loading...</title>
+  <meta name="description" content="Loading AI Prompt">
+  <meta name="robots" content="index, follow">
+</head>
+
+<body>
+
+<article>
+  <h1 id="postTitle">Loading...</h1>
+  <img id="postImg" style="width:100%;max-width:600px;border-radius:10px">
+  <p id="postPrompt"></p>
+</article>
+
+<script>
+const slug = new URLSearchParams(location.search).get("view");
+const API_URL = "https://ambylxvsxgxfgzpxzwpr.supabase.co/functions/v1/bright-worker";
+
+fetch(API_URL)
+.then(r=>r.json())
+.then(res=>{
+  const items = Object.values(res.prompts || {});
+  const post = items.find(p =>
+    p.title.trim().replace(/\s+/g,'-') === slug
+  );
+
+  if(!post){
+    document.body.innerHTML = "<h2>Post not found</h2>";
+    return;
+  }
+
+  // Content
+  document.getElementById("postTitle").innerText = post.title;
+  document.getElementById("postImg").src = post.imgLink;
+  document.getElementById("postPrompt").innerText = post.prompt;
+
+  // SEO
+  document.title = post.title + " | Jhadi AI";
+  document.querySelector("meta[name='description']")
+    .setAttribute("content", post.prompt.substring(0,150));
+});
+</script>
+
+</body>
+</html>
